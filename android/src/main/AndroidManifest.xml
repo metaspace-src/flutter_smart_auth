@@ -1,3 +1,10 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
   package="fman.ge.smart_auth">
+    <application>
+        <activity android:name=".PhoneNumberHintActivity"
+            android:theme="@style/Theme.Transparent"
+            android:excludeFromRecents="true"
+            android:taskAffinity=""
+            />
+    </application>
 </manifest>

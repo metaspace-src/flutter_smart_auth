@@ -66,9 +66,7 @@ class _MyAppState extends State<MyApp> {
 
   void requestHint() async {
     final res = await smartAuth.requestHint(
-      isPhoneNumberIdentifierSupported: true,
-      isEmailAddressIdentifierSupported: true,
-      showCancelButton: true,
+      countryCode: 'IN',
     );
     debugPrint('requestHint: $res');
   }

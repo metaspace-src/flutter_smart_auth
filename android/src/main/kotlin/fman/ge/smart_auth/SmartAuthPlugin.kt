@@ -31,7 +31,7 @@ import io.flutter.plugin.common.PluginRegistry
 class SmartAuthPlugin : FlutterPlugin, MethodCallHandler, ActivityAware,
     PluginRegistry.ActivityResultListener {
     private lateinit var mContext: Context
-    private var mActivity: Activity? = null
+    private lateinit var mActivity: Activity
     private var mBinding: ActivityPluginBinding? = null
     private var mChannel: MethodChannel? = null
     private var pendingResult: MethodChannel.Result? = null
@@ -56,15 +56,13 @@ class SmartAuthPlugin : FlutterPlugin, MethodCallHandler, ActivityAware,
 
 
     override fun onReattachedToActivityForConfigChanges(binding: ActivityPluginBinding) {
-        mActivity = binding.activity
-        mBinding = binding
-        binding.addActivityResultListener(this)
+        onAttachedToActivity(binding)
     }
 
     override fun onAttachedToActivity(binding: ActivityPluginBinding) {
         mActivity = binding.activity
         mBinding = binding
-        binding.addActivityResultListener(this)
+        mBinding?.addActivityResultListener(this)
     }
 
     override fun onMethodCall(call: MethodCall, result: MethodChannel.Result) {
@@ -103,50 +101,12 @@ class SmartAuthPlugin : FlutterPlugin, MethodCallHandler, ActivityAware,
 
     private fun requestHint(call: MethodCall, result: MethodChannel.Result) {
         pendingResult = result
-        val showAddAccountButton = call.argument<Boolean?>("showAddAccountButton")
-        val showCancelButton = call.argument<Boolean?>("showCancelButton")
-        val isPhoneNumberIdentifierSupported =
-            call.argument<Boolean?>("isPhoneNumberIdentifierSupported")
-        val isEmailAddressIdentifierSupported =
-            call.argument<Boolean?>("isEmailAddressIdentifierSupported")
-        val accountTypes = call.argument<String?>("accountTypes")
-        val idTokenNonce = call.argument<String?>("idTokenNonce")
-        val isIdTokenRequested = call.argument<Boolean?>("isIdTokenRequested")
-        val serverClientId = call.argument<String?>("serverClientId")
-
-        val hintRequest = Builder()
-        val config = CredentialPickerConfig.Builder()
-
-        if (showAddAccountButton != null) config.setShowAddAccountButton(showAddAccountButton)
-
-        if (showCancelButton != null) config.setShowCancelButton(showCancelButton)
-
-        hintRequest.setHintPickerConfig(config.build())
-
-        if (isPhoneNumberIdentifierSupported != null) hintRequest.setPhoneNumberIdentifierSupported(
-            isPhoneNumberIdentifierSupported
-        )
-
-        if (isEmailAddressIdentifierSupported != null) hintRequest.setEmailAddressIdentifierSupported(
-            isEmailAddressIdentifierSupported
-        )
-
-        if (accountTypes != null) hintRequest.setAccountTypes(accountTypes)
-
-        if (idTokenNonce != null) hintRequest.setIdTokenNonce(idTokenNonce)
-
-        if (isIdTokenRequested != null) hintRequest.setIdTokenRequested(isIdTokenRequested)
-
-        if (serverClientId != null) hintRequest.setServerClientId(serverClientId)
-
-
-        val intent: PendingIntent =
-            Credentials.getClient(mContext).getHintPickerIntent(hintRequest.build())
-
         if (mActivity != null) {
-            startIntentSenderForResult(
-                mActivity!!, intent.intentSender, HINT_REQUEST, null, 0, 0, 0, null
-            )
+            val countryCode = call.argument<String?>("countryCode") ?: "IN"
+            val intent = Intent(mActivity, PhoneNumberHintActivity::class.java).apply {
+                putExtra("COUNTRY_CODE", countryCode)
+            }
+            mActivity.startActivityForResult(intent, HINT_REQUEST)
         }
     }
 
@@ -290,9 +250,9 @@ class SmartAuthPlugin : FlutterPlugin, MethodCallHandler, ActivityAware,
 
     private fun onHintRequest(resultCode: Int, data: Intent?) {
         if (resultCode == RESULT_OK && data != null) {
-            val credential: Credential? = data.getParcelableExtra(Credential.EXTRA_KEY)
-            if (credential != null) {
-                ignoreIllegalState { pendingResult?.success(credentialToMap(credential)) }
+            val phoneNumber = data.getStringExtra("PHONE_NUMBER")
+            if (phoneNumber != null) {
+                ignoreIllegalState { pendingResult?.success(phoneNumber) }
                 return
             }
         }
@@ -365,7 +325,6 @@ class SmartAuthPlugin : FlutterPlugin, MethodCallHandler, ActivityAware,
     private fun dispose() {
         unregisterAllReceivers()
         ignoreIllegalState { pendingResult?.success(null) }
-        mActivity = null
         mBinding?.removeActivityResultListener(this)
         mBinding = null
     }

@@ -131,7 +131,7 @@ class SmartAuth {
   /// Opens dialog of user emails and/or phone numbers
   /// More about hint request https://developers.google.com/identity/smartlock-passwords/android/retrieve-hints
   /// More about parameters https://developers.google.com/android/reference/com/google/android/gms/auth/api/credentials/HintRequest.Builder
-  Future<Credential?> requestHint({
+  Future<String?> requestHint({
     // Enables returning credential hints where the identifier is an email address,
     // intended for use with a password chosen by the user.
     bool? isEmailAddressIdentifierSupported,
@@ -156,24 +156,15 @@ class SmartAuth {
     // then it will be used as the audience of the generated token. If a null value is specified,
     // the default audience will be used for the generated ID token.
     String? serverClientId,
+    // For formatting the phone number based on countryCode. Default: 'IN'
+    String? countryCode,
   }) async {
     if (_isAndroid(Methods.requestHint)) {
       try {
         final res = await _channel.invokeMethod(Methods.requestHint, {
-          'isEmailAddressIdentifierSupported':
-              isEmailAddressIdentifierSupported,
-          'isPhoneNumberIdentifierSupported': isPhoneNumberIdentifierSupported,
-          'accountTypes': accountTypes,
-          'isIdTokenRequested': isIdTokenRequested,
-          'showAddAccountButton': showAddAccountButton,
-          'showCancelButton': showCancelButton,
-          'idTokenNonce': idTokenNonce,
-          'serverClientId': serverClientId,
+          'countryCode': countryCode,
         });
-        if (res == null) return null;
-        final Map<String, dynamic> map =
-            jsonDecode(jsonEncode(res)) as Map<String, dynamic>;
-        return Credential.fromJson(map);
+        return res;
       } catch (error) {
         debugPrint('Pinput/SmartAuth: requestHint failed: $error');
         return null;
